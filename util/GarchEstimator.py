@@ -7,7 +7,7 @@ Purpose:
     class object of estimating and fitting various GARCH models
 
 Date:
-    2020/03/30
+    2020/04/26
 
 @author: SimonSkorna
 """
@@ -20,19 +20,23 @@ from scipy.optimize import minimize, Bounds
 ###
 class GarchEstimator:
     
-    def __init__(self, theta_init):
+    def __init__(self, theta_init, theta=None):
         self.theta_init = theta_init
-        self.theta = theta_init
+        if (theta is None) : 
+            self.theta = theta_init
+        else :
+            self.theta = theta
         
     def garch_filter(self, time_series, theta):
         
         T = len(time_series)
         sigma_sqr = np.zeros(T)
         # initiate first value
-        sigma_sqr[0] = np.var(time_series)
+        # sigma_sqr[0:2] = np.var(time_series)
+        sigma_sqr[0:3] = 0.1
         # loop through all values of sigma
-        for i in range(1, T):
-            sigma_sqr[i] = theta[0] + theta[1] * time_series[i-1] ** 2 + theta[2] * sigma_sqr[i-1]
+        for i in range(3, T):
+            sigma_sqr[i] = theta[0] + theta[1] * time_series[i-1] ** 2 + theta[2] * time_series[i-2] ** 2 + theta[3] * sigma_sqr[i-1] + theta[4] * sigma_sqr[i-2] + theta[5] * sigma_sqr[i-3]
         
         return sigma_sqr
         
@@ -50,7 +54,7 @@ class GarchEstimator:
             return sum(llik)
         
     def fit_model(self, time_series, method):
-        bounds = Bounds([0.00001, 0, 0],[100, 100, 100])
+        bounds = Bounds([0.000001, 0, 0, 0, 0, 0],[100, 100, 100, 100, 100, 100])
         x0 = list(self.theta_init.values())
         optim = True
 
@@ -62,7 +66,14 @@ class GarchEstimator:
             options = {'gtol' : 1e-8, 'xtol' : 1e-8, 'maxiter' : 1000, 'disp' : True},
             bounds = bounds
         )
-        
+        self.theta = {
+            'alpha' : res.x[0],
+            'beta1' : res.x[1],
+            'beta2' : res.x[2],
+            'omega1' : res.x[3],
+            'omega2' : res.x[4],
+            'omega3' : res.x[5],
+        }
         print('Model recalculated!')
         print(res)
         
