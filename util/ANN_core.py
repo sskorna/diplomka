@@ -65,7 +65,7 @@ def sigmoid_der(x):
 
 def lLik(obs_val, sigma_pred):
 
-    LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred) - (1/2) * ((obs_val.T ** 2) / sigma_pred)
+    LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred) - (1/2) * ((obs_val** 2) / sigma_pred)
 
     return LLik	
 
@@ -143,7 +143,7 @@ class NeuralNetwork:
         
         self.y          = y
 
-        self.output     = np.zeros(self.y.shape)
+        self.output     = np.ones(self.y.shape)
         
         self.step_rate = step_rate
         
@@ -271,6 +271,17 @@ class NeuralNetwork:
     def cost(self):
         return np.sum(self.obj_fun(self.y, self.output))
     
+    def get_output(self):
+        return self.output
+        
+    def get_observed(self):
+        return self.y
+    def get_layer1(self):
+        return self.layer1
+    def get_layer2(self):
+        return self.layer2
+    def get_weights(self):
+        return [self.weights_input, self.weights_hidden, self.weights_out]
 #    def change_data(self, new_x, new_y):
 #        self.x = new_x
 #        self.y = new_y
