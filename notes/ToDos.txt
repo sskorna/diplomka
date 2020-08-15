@@ -1,0 +1,6 @@
+-- Prepisat NNku
+-- ziadna hidden layer, linearna funkcia a squared error
+-- ziadna hidden layer, sigmoid, squared error
+-- ziadna hidden layer, sigmoid, llik
+-- 1 hidden layer, sigmoid, llik
+-- 2 hidden layer, sigmoid, llik

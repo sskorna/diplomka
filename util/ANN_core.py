@@ -36,7 +36,7 @@ Notes:
 ###########################################################
 ### Imports
 import numpy as np
-#import pandas as pd
+# import pandas as pd
 # import matplotlib.pyplot as plt
 # import scipy.optimize as opt
 # import seaborn as sns
@@ -65,7 +65,7 @@ def sigmoid_der(x):
 
 def lLik(obs_val, sigma_pred):
 
-    LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred) - (1/2) * ((obs_val** 2) / sigma_pred)
+    LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred ** 2) - (1/2) * ((obs_val** 2) / sigma_pred ** 2)
 
     return LLik	
 
@@ -75,7 +75,7 @@ def lLik(obs_val, sigma_pred):
 
 def lLik_der(obs_val, sigma_pred):
     
-    LLik_der = - 1 / sigma_pred ** (1/2) + (1 / sigma_pred ** (3/2)) * (obs_val)
+    LLik_der = - 1 / sigma_pred + (1 / sigma_pred ** 3) * (obs_val ** 2)
     
     return LLik_der
 
@@ -117,7 +117,7 @@ def linear_der(x):
 class NeuralNetwork:
 
     def __init__(self, x, y, obj_fun = square_error, node_fun = linear,
-                 hidden_layer = 1, step_rate = 0.0001, bias = False, num_nodes = [1,0]):
+                 hidden_layer = 1, step_rate = 0.01, bias = False, num_nodes = [1,0]):
         
         self.nodes1     = num_nodes[0]
         
@@ -228,7 +228,7 @@ class NeuralNetwork:
         
         self.layer1 = self.node1_fun(np.dot(self.input, self.weights_input) + self.bias_input)
         
-        self.layer2 = self.node2_fun(np.dot(self.layer1, self.weights_hidden ) + self.bias_hidden)
+        self.layer2 = self.node2_fun(np.dot(self.layer1, self.weights_hidden) + self.bias_hidden)
         
         self.output = np.dot(self.layer2, self.weights_out) + self.bias_out
         
@@ -240,7 +240,7 @@ class NeuralNetwork:
         
         d_weights_out = np.dot(self.layer2.T, error_out) / self.output.shape[0]
         
-        error_hidden = np.dot(error_out, self.weights_out.T) *  self.node2_fun_der(self.layer2) #this is derivative in terms of f(x) maybe should change to derivative in terms of x, then it need to be layer1*weights_hidden
+        error_hidden = np.dot(error_out, self.weights_out.T) *  self.node2_fun_der(self.layer2) #this is derivative in terms of f(x) maybe should change to derivative in terms of x, then it needs to be layer1*weights_hidden
         
         d_weights_hidden = np.dot(self.layer1.T, error_hidden) / self.layer2.shape[0]
         
@@ -270,7 +270,6 @@ class NeuralNetwork:
     
     def cost(self):
         return np.sum(self.obj_fun(self.y, self.output))
-    
     def get_output(self):
         return self.output
         
@@ -282,6 +281,8 @@ class NeuralNetwork:
         return self.layer2
     def get_weights(self):
         return [self.weights_input, self.weights_hidden, self.weights_out]
+    def get_input(self): 
+        return self.input
 #    def change_data(self, new_x, new_y):
 #        self.x = new_x
 #        self.y = new_y
