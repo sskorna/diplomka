@@ -56,7 +56,7 @@ def sigmoid(x):
 
 def sigmoid_der(x):
     
-#    return sigmoid(x) * (1 - sigmoid(x))
+#     return sigmoid(x) * (1 - sigmoid(x))
     return x * (1 - x)
 
 # =============================================================================
@@ -95,7 +95,7 @@ def square_error(obs_val, obs_pred):
 #change in weights and biases is not += but -=
 def square_error_der(obs_val, obs_pred):
     
-    return 2 * (obs_val - obs_pred)
+    return  (obs_val - obs_pred)
 
 # =============================================================================
 # define linear function for case when only one layer
@@ -117,7 +117,7 @@ def linear_der(x):
 class NeuralNetwork:
 
     def __init__(self, x, y, obj_fun = square_error, node_fun = linear,
-                 hidden_layer = 1, step_rate = 0.01, bias = False, num_nodes = [1,0]):
+                 hidden_layer = 1, step_rate = 0.001, bias = False, num_nodes = [1,0]):
         
         self.nodes1     = num_nodes[0]
         
@@ -224,8 +224,7 @@ class NeuralNetwork:
             print('set number of hidden layers to 0, 1 or 2')
             
     def feedforward(self):
-        
-        
+
         self.layer1 = self.node1_fun(np.dot(self.input, self.weights_input) + self.bias_input)
         
         self.layer2 = self.node2_fun(np.dot(self.layer1, self.weights_hidden) + self.bias_hidden)
@@ -238,21 +237,33 @@ class NeuralNetwork:
         
         error_out = self.obj_fun_der(self.y, self.output)
         
-        d_weights_out = np.dot(self.layer2.T, error_out) / self.output.shape[0]
+#         print(error_out.head())
         
-        error_hidden = np.dot(error_out, self.weights_out.T) *  self.node2_fun_der(self.layer2) #this is derivative in terms of f(x) maybe should change to derivative in terms of x, then it needs to be layer1*weights_hidden
+        d_weights_out = np.dot(self.layer2.T, error_out) 
         
-        d_weights_hidden = np.dot(self.layer1.T, error_hidden) / self.layer2.shape[0]
+#         print(d_weights_out)
+        
+        error_hidden = np.dot(error_out, self.weights_out.T) * self.node2_fun_der(self.layer2) # this is derivative in terms of f(x) maybe should change to derivative in terms of x, then it needs to be layer1*weights_hidden
+        
+#         print(error_hidden[1:5])
+        
+        d_weights_hidden = np.dot(self.layer1.T, error_hidden) 
+        
+#         print(d_weights_hidden)
         
         error_input = np.dot(error_hidden, self.weights_hidden.T) * self.node1_fun_der(self.layer1)
         
-        d_weights_input = np.dot(self.input.T, error_input) / self.input.shape[0]
+#         print(error_input[1:5])
         
-        d_bias_out = np.dot(np.ones(self.output.shape[0]), error_out) / self.output.shape[0]
+        d_weights_input = np.dot(self.input.T, error_input)
         
-        d_bias_hidden = np.dot(np.ones(self.layer2.shape[0]), error_hidden) / self.layer2.shape[0]
+#         print(d_weights_input)
         
-        d_bias_input = np.dot(np.ones(self.input.shape[0]), error_input) / self.input.shape[0]
+        d_bias_out = np.dot(np.ones(self.output.shape[0]), error_out) 
+        
+        d_bias_hidden = np.dot(np.ones(self.layer2.shape[0]), error_hidden)
+        
+        d_bias_input = np.dot(np.ones(self.input.shape[0]), error_input)
         
         #update weights and biases
         
@@ -268,11 +279,33 @@ class NeuralNetwork:
         
         self.bias_input += d_bias_input * self.step_rate * self.bias
     
-    def cost(self):
-        return np.sum(self.obj_fun(self.y, self.output))
-    def get_output(self):
-        return self.output
-        
+    def cost(self, new_input = None, new_y = None):
+        # check if different input specified
+        if new_input is None and new_y is None: 
+            # if not - get the cost from training
+            return np.sum(self.obj_fun(self.y, self.output))
+        else:
+            # if yes - get new prediction 
+            layer1 = self.node1_fun(np.dot(new_input, self.weights_input) + self.bias_input)
+            layer2 = self.node2_fun(np.dot(layer1, self.weights_hidden) + self.bias_hidden)
+            predicted_output = np.dot(layer2, self.weights_out) + self.bias_out
+
+            return np.sum(self.obj_fun(new_y, predicted_output))
+    
+    def predict(self, new_input = None):
+        # check if different input specified
+        if new_input is None: 
+            # if not - get the output from training
+            return self.output
+        else:
+            # if yes - get new prediction 
+            layer1 = self.node1_fun(np.dot(new_input, self.weights_input) + self.bias_input)
+            layer2 = self.node2_fun(np.dot(layer1, self.weights_hidden) + self.bias_hidden)
+            predicted_output = np.dot(layer2, self.weights_out) + self.bias_out
+
+            return predicted_output
+    
+    # this has been here for debugging  
     def get_observed(self):
         return self.y
     def get_layer1(self):
@@ -283,6 +316,3 @@ class NeuralNetwork:
         return [self.weights_input, self.weights_hidden, self.weights_out]
     def get_input(self): 
         return self.input
-#    def change_data(self, new_x, new_y):
-#        self.x = new_x
-#        self.y = new_y

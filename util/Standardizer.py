@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GacrhEstimator.py
+Standardizer.py
 
 Purpose:
     Class to demean and/or rescale variable
@@ -17,7 +17,7 @@ Date:
 @author: SimonSkorna
 """
 
-class Standardize :
+class Standardizer :
 
     def __init__(self, demean=True, rescale=True, skipna=True) :
         self.demean = demean
@@ -33,21 +33,35 @@ class Standardize :
         if self.demean == True:
             mean = data.mean(skipna=self.skipna)
             data_standard = data_standard - mean
-            
+            # store mean indictionary
             if data.name not in self.means:
                 self.means[data.name] = mean
             
         if self.rescale == True:
             std = data.std(skipna=self.skipna)
             data_standard = data_standard / std
-            
+            # store std in dictionary
             if data.name not in self.stds:
                 self.stds[data.name] = std
     
         return data_standard
     
-    def get_selfs(self):
-        print(self.demean)
+    def get_stds(self):
+        return self.stds
     
     def get_means(self):
         return self.means
+    
+    def predict(self, data) : 
+        # standardize new data if stored means and stds
+        data_standard = data
+        
+        if self.demean == True:
+            mean = self.means[data.name]
+            data_standard = data_standard - mean
+            
+        if self.rescale == True:
+            std = self.stds[data.name]
+            data_standard = data_standard / std
+    
+        return data_standard
