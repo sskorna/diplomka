@@ -35,5 +35,7 @@ def returns_load(ticker, start_dt, end_dt, interval = '1d'):
         'close_lag': data.iloc[0:data_len-1, close_col_index].values,
         'return': (data.iloc[1:data_len, close_col_index].values / 
         data.iloc[0:data_len-1, close_col_index].values) - 1 ,
+        'return100': ((data.iloc[1:data_len, close_col_index].values / 
+        data.iloc[0:data_len-1, close_col_index].values) - 1) * 100
         })
     return ret_data

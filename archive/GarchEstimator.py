@@ -33,7 +33,7 @@ class GarchEstimator:
         sigma_sqr = np.zeros(T)
         # initiate first value
         # sigma_sqr[0:2] = np.var(time_series)
-        sigma_sqr[0:3] = 0.1
+        sigma_sqr[0:3] = np.var(time_series)
         # loop through all values of sigma
         for i in range(3, T):
             sigma_sqr[i] = theta[1] + theta[2] * time_series[i-1] ** 2 + theta[3] * time_series[i-2] ** 2 + theta[4] * sigma_sqr[i-1] + theta[5] * sigma_sqr[i-2] + theta[6] * sigma_sqr[i-3]
@@ -102,6 +102,7 @@ class GarchEstimator:
             self.llik = self.calc_llik(theta=list(self.theta.values()), time_series=data_fit, method=method)
             
         return sigma_sqr
+        
     def get_AIC(self): 
         
         try: 
