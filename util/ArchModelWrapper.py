@@ -31,12 +31,16 @@ class ArchModelWrapper():
         self.predictions = {}
         
     def estimate_predict(self, model, p, q, dist):
-
-        garch_1_1 = arch_model(self.train_data, vol=model, p=p, o=0, q=q, dist = dist)
+        
+        if model == 'GAS':
+            mod = pf.GAS(ar=p, sc=q, data=self.train_data, family=pf.Normal())
+        else:
+            mod = arch_model(self.train_data, vol=model, p=p, o=0, q=q, dist = dist, mean='Zero')
+            
         forecasts = pd.DataFrame()
         for last_date in self.eval_data_garch.index:
 
-            res = garch_1_1.fit(last_obs=last_date , disp='off')
+            res = mod.fit(last_obs=last_date , disp='off')
             temp = res.forecast(horizon=1)
             temp_var = temp.variance
             temp_mean = temp.mean
