@@ -30,12 +30,18 @@ class ArchModelWrapper():
         self.eval_data_garch = eval_data_garch
         self.predictions = {}
         
-    def estimate_predict(self, model, p, q, dist):
+    def estimate_predict(self, model, p, o, q, dist):
         
         if model == 'GAS':
             mod = pf.GAS(ar=p, sc=q, data=self.train_data, family=pf.Normal())
-        else:
-            mod = arch_model(self.train_data, vol=model, p=p, o=0, q=q, dist = dist, mean='Zero')
+        elif model == 'EGARCH':
+            mod = arch_model(
+            self.train_data, vol=model, p=p, o=o, q=q,
+            dist = dist, mean='Zero')
+        elif model == 'GARCH':
+            mod = arch_model(
+                self.train_data, vol=model, p=p, o=0, q=q,
+                dist = dist, mean='Zero')
             
         forecasts = pd.DataFrame()
         for last_date in self.eval_data_garch.index:
@@ -45,9 +51,14 @@ class ArchModelWrapper():
             temp_var = temp.variance
             temp_mean = temp.mean
 
-            # ugly way to get one day before - difficult since no data on weekends and holidays(market's closed)
+            # ugly way to get one day before - 
+            # difficult since no data on weekends and holidays(market's closed)
             day_before = self.train_data.iloc[
-                np.append((self.train_data.index == last_date)[1:len(self.train_data.index == last_date)], False)
+                np.append(
+                    (self.train_data.index == last_date)[
+                        1:len(self.train_data.index == last_date)
+                    ],
+                False)
             ].index[0]
 
             fcast = {

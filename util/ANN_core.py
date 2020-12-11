@@ -6,41 +6,17 @@ ANN_core.py
 Purpose:
     define class object of NN 
 
-Version:
-    1       no hidden layer 
-    2       one hidden layer
-    3       added biases 
-    4       added argument for number of nodes in hidden layer
-    5       added LLik functions as cost function
-    6       added possibility of having 2nd hidden layer
-    7       simplifying feedforward and backprop and restructuring the initialization of class
-    8       solving problem with dimensions by ditching matrix multiplication of node_fun derivative
-
 Date:
-    2019/05/16
+    2020/11/01
 
-@author: ssa299
-
-Notes:
-    x: matrix[i,j] with i observation of j variables
-    y: vector[j] of j true observation
-    obj_fun: either lLik or squared_error, give as function name not as a string
-    node_fun: either linear or sigmoid, give as function name not as a string
-    hidden_layer: number of hidden layers,option of 1 or 2
-    step_rate: rate multyplying average partial derivative
-    bias: True or False, whether biases should be used
-    num_nodes:  list of two integers, each specifying number of nodes for each layer 
-                put zeros if want to skip one of the layers
+@author: Simon Skorna
     
 """
 ###########################################################
 ### Imports
 import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import scipy.optimize as opt
-# import seaborn as sns
-# import statsmodels.api as sm
+from scipy.special import gamma
+
 
 # =============================================================================
 # define sigmoid function
@@ -63,27 +39,39 @@ def sigmoid_der(x):
 # define log likelihood function
 # =============================================================================
 
-def lLik(obs_val, sigma_pred):
-
-    LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred ** 2) - (1/2) * ((obs_val** 2) / sigma_pred ** 2)
-
-    return LLik	
+def lLik(obs_val, sigma_pred, dist):
+    
+    if dist == 'normal': 
+        
+        LLik = -(1/2) * np.log(2 * np.pi) - (1/2) * np.log(sigma_pred ** 2) - (1/2) \
+            * ((obs_val** 2) / sigma_pred ** 2)
+    
+    if dist == 'studentst':
+        
+        print('TBD')
+        
+    return LLik
 
 # =============================================================================
 # define derivation of log likelihood
 # =============================================================================
 
-def lLik_der(obs_val, sigma_pred):
+def lLik_der(obs_val, sigma_pred, dist):
     
-    LLik_der = - 1 / sigma_pred + (1 / sigma_pred ** 3) * (obs_val ** 2)
+    if dist == 'normal':
+        
+        LLik_der = - 1 / sigma_pred + (1 / sigma_pred ** 3) * (obs_val ** 2)
     
+    if dist == 'studentst':
+        
+        print('TBD')
     return LLik_der
 
 # =============================================================================
 # define squared errors
 # =============================================================================
 
-def square_error(obs_val, obs_pred):
+def square_error(obs_val, obs_pred, *args):
     
     return (obs_val - obs_pred) ** 2
 
@@ -93,7 +81,7 @@ def square_error(obs_val, obs_pred):
     
 #in this case should be multiplied by -1 since with respect to obs_pred, but then 
 #change in weights and biases is not += but -=
-def square_error_der(obs_val, obs_pred):
+def square_error_der(obs_val, obs_pred, *args):
     
     return  (obs_val - obs_pred)
 
@@ -116,8 +104,9 @@ def linear_der(x):
     
 class NeuralNetwork:
 
-    def __init__(self, x, y, obj_fun = square_error, node_fun = linear,
-                 hidden_layer = 1, step_rate = 0.001, bias = False, num_nodes = [1,0]):
+    def __init__(self, x, y, obj_fun = square_error, dist = None, node_fun = linear,
+                 hidden_layer = 1, step_rate = 0.001, bias = False, num_nodes = [1,0],
+                L2_reg = False, lambda_reg = 0):
         
         self.nodes1     = num_nodes[0]
         
@@ -135,6 +124,8 @@ class NeuralNetwork:
             
             self.obj_fun_der = lLik_der
             
+            self.dist = dist
+            
         else :
             
             print('set objective function to either squared errors or log-likelihood')
@@ -149,11 +140,17 @@ class NeuralNetwork:
         
         self.bias = bias * 1
         
+        self.L2_reg = L2_reg * 1
+        
+        self.lambda_reg = lambda_reg
+        
         if hidden_layer == 0 :
             
             self.weights_out = self.weights_hidden = np.ones([1,1])
             
-            self.weights_input = np.random.rand(self.input.shape[1], 1)
+            # random initialization based on tds article
+            self.weights_input = np.random.randn(self.input.shape[1], 1) * \ 
+                np.sqrt(2/self.input.shape[1])
             
             self.bias_out = self.bias_hidden = self.bias_input = np.zeros([1,1])
             
@@ -169,9 +166,14 @@ class NeuralNetwork:
             
             self.weights_out = np.ones([1,1])
             
-            self.weights_hidden = np.random.rand(self.nodes1, 1)
+            # random initialization based on tds article
+            self.weights_hidden = np.random.randn(self.nodes1, 1) * \ 
+                np.sqrt(2/self.input.shape[1])
             
-            self.weights_input = np.random.rand(self.input.shape[1], self.nodes1)
+            # random initialization based on tds article
+            self.weights_input = np.random.randn(
+                self.input.shape[1], self.nodes1
+            ) * np.sqrt(2/self.input.shape[1])
             
             self.bias_out = self.bias_hidden = np.zeros([1,1])
             
@@ -193,11 +195,18 @@ class NeuralNetwork:
             
         elif hidden_layer == 2 :
             
-            self.weights_out = np.random.rand(self.nodes2, 1)
+            # random initialization based on tds article
+            # in addition to ensure that initial output wil be positive square it
+            self.weights_out = (np.random.randn(self.nodes2, 1) * \ 
+                np.sqrt(2/self.input.shape[1])) ** 2
             
-            self.weights_hidden = np.random.rand(self.nodes1, self.nodes2)
+            # random initialization based on tds article
+            self.weights_hidden = np.random.randn(self.nodes1, self.nodes2) * \ 
+                np.sqrt(2/self.input.shape[1])
             
-            self.weights_input = np.random.rand(self.input.shape[1], self.nodes1)
+            # random initialization based on tds article
+            self.weights_input = np.random.randn(self.input.shape[1], self.nodes1) * \ 
+                np.sqrt(2/self.input.shape[1])
             
             self.bias_out = np.zeros([1,1])
             
@@ -225,9 +234,11 @@ class NeuralNetwork:
             
     def feedforward(self):
 
-        self.layer1 = self.node1_fun(np.dot(self.input, self.weights_input) + self.bias_input)
+        self.layer1 = self.node1_fun(np.dot(self.input, self.weights_input) + \ 
+            self.bias_input)
         
-        self.layer2 = self.node2_fun(np.dot(self.layer1, self.weights_hidden) + self.bias_hidden)
+        self.layer2 = self.node2_fun(np.dot(self.layer1, self.weights_hidden) + \ 
+            self.bias_hidden)
         
         self.output = np.dot(self.layer2, self.weights_out) + self.bias_out
         
@@ -235,7 +246,7 @@ class NeuralNetwork:
         
         #calculate errors and partial derivatives
         
-        error_out = self.obj_fun_der(self.y, self.output)
+        error_out = self.obj_fun_der(self.y, self.output, self.dist)
         
 #         print(error_out.head())
         
@@ -243,7 +254,8 @@ class NeuralNetwork:
         
 #         print(d_weights_out)
         
-        error_hidden = np.dot(error_out, self.weights_out.T) * self.node2_fun_der(self.layer2) # this is derivative in terms of f(x) maybe should change to derivative in terms of x, then it needs to be layer1*weights_hidden
+        error_hidden = np.dot(error_out, self.weights_out.T) * \ 
+            self.node2_fun_der(self.layer2) 
         
 #         print(error_hidden[1:5])
         
@@ -251,7 +263,8 @@ class NeuralNetwork:
         
 #         print(d_weights_hidden)
         
-        error_input = np.dot(error_hidden, self.weights_hidden.T) * self.node1_fun_der(self.layer1)
+        error_input = np.dot(error_hidden, self.weights_hidden.T) * \ 
+            self.node1_fun_der(self.layer1)
         
 #         print(error_input[1:5])
         
@@ -267,30 +280,38 @@ class NeuralNetwork:
         
         #update weights and biases
         
-        self.weights_out += d_weights_out * self.step_rate * (self.nodes2 > 0)
+        self.weights_out += d_weights_out * self.step_rate * \ 
+            (self.nodes2 > 0) - self.lambda_reg * self.L2_reg * self.weights_out
         
-        self.weights_hidden += d_weights_hidden * self.step_rate * (self.nodes1 > 0) 
+        self.weights_hidden += d_weights_hidden * self.step_rate * \ 
+            (self.nodes1 > 0) - self.lambda_reg * self.L2_reg * self.weights_hidden
         
-        self.weights_input += d_weights_input * self.step_rate
+        self.weights_input += d_weights_input * self.step_rate \
+            - self.lambda_reg * self.L2_reg *self.weights_input
         
-        self.bias_out += d_bias_out * self.step_rate * self.bias * (self.nodes2 > 0)
+        self.bias_out += d_bias_out * self.step_rate * self.bias * \ 
+            (self.nodes2 > 0) - self.lambda_reg * self.L2_reg * self.bias_out
         
-        self.bias_hidden += d_bias_hidden * self.step_rate * self.bias * (self.nodes1 > 0)
+        self.bias_hidden += d_bias_hidden * self.step_rate * self.bias * \
+            (self.nodes1 > 0) - self.lambda_reg * self.L2_reg * self.bias_hidden
         
-        self.bias_input += d_bias_input * self.step_rate * self.bias
+        self.bias_input += d_bias_input * self.step_rate * self.bias \
+            - self.lambda_reg * self.L2_reg * self.bias_input
     
     def cost(self, new_input = None, new_y = None):
         # check if different input specified
         if new_input is None and new_y is None: 
             # if not - get the cost from training
-            return np.sum(self.obj_fun(self.y, self.output))
+            return np.sum(self.obj_fun(self.y, self.output, self.dist))
         else:
             # if yes - get new prediction 
-            layer1 = self.node1_fun(np.dot(new_input, self.weights_input) + self.bias_input)
-            layer2 = self.node2_fun(np.dot(layer1, self.weights_hidden) + self.bias_hidden)
-            predicted_output = np.dot(layer2, self.weights_out) + self.bias_out
+            temp_layer1 = self.node1_fun(np.dot(new_input, self.weights_input) \ 
+                + self.bias_input)
+            temp_layer2 = self.node2_fun(np.dot(temp_layer1, self.weights_hidden) \ 
+                + self.bias_hidden)
+            temp_output = np.dot(temp_layer2, self.weights_out) + self.bias_out
 
-            return np.sum(self.obj_fun(new_y, predicted_output))
+            return np.sum(self.obj_fun(new_y, temp_output, self.dist))
     
     def predict(self, new_input = None):
         # check if different input specified
@@ -299,20 +320,21 @@ class NeuralNetwork:
             return self.output
         else:
             # if yes - get new prediction 
-            layer1 = self.node1_fun(np.dot(new_input, self.weights_input) + self.bias_input)
-            layer2 = self.node2_fun(np.dot(layer1, self.weights_hidden) + self.bias_hidden)
-            predicted_output = np.dot(layer2, self.weights_out) + self.bias_out
+            temp_layer1 = self.node1_fun(np.dot(new_input, self.weights_input) + \
+                self.bias_input)
+            temp_layer2 = self.node2_fun(np.dot(temp_layer1, self.weights_hidden) + \ 
+                self.bias_hidden)
+            temp_output = np.dot(temp_layer2, self.weights_out) + self.bias_out
 
-            return predicted_output
+            return temp_output
+        
+    def add_data(self, new_x, new_y):
+     
+        self.input = pd.concat([self.input, new_x])
+        
+        self.y = pd.concat([self.y, new_y])       
     
-    # this has been here for debugging  
-    def get_observed(self):
-        return self.y
-    def get_layer1(self):
-        return self.layer1
-    def get_layer2(self):
-        return self.layer2
+    # this has been here for debugging
     def get_weights(self):
+        
         return [self.weights_input, self.weights_hidden, self.weights_out]
-    def get_input(self): 
-        return self.input

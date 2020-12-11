@@ -8,7 +8,7 @@ Purpose:
     over specified window
 
 Date:
-    2020/04/27
+    2020/08/27
 
 @author: SimonSkorna
 """
@@ -27,7 +27,8 @@ class DescStat:
     def calc_mean(self, window, fill_initial=None):
         
         mean_ = self.data.rolling(window).mean()
-        # drop last and include one more Nan at begining to shift according to explained Variable
+        # drop last and include one more Nan at begining to shift according 
+        # to explained Variable
         # in order to not have target leak (not to see future in explanatory variables)
         mean_ = pd.concat([pd.Series(np.nan), mean_[:-1]]).reset_index(drop=True)
         if fill_initial is not None:
@@ -43,7 +44,8 @@ class DescStat:
     def calc_var(self, window, fill_initial=None): 
         
         var_ = self.data.rolling(window).var()
-        # drop last and include one more Nan at begining to shift according to explained Variable
+        # drop last and include one more Nan at begining to shift according 
+        # to explained Variable
         # in order to not have target leak (not to see future in explanatory variables)
         var_ = pd.concat([pd.Series(np.nan), var_[:-1]]).reset_index(drop=True)
         if fill_initial is not None:

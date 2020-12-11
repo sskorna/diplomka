@@ -8,7 +8,7 @@ Purpose:
     and claculated returns as ratio of price and lagged price by one time interval
 
 Date:
-    2020/03/30
+    2020/07/30
 
 @author: SimonSkorna
 """
